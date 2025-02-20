@@ -1,8 +1,8 @@
 # Group 6
-Project Name: PROJECT_NAME
+Project Name: ShelfAware
 
-[MVP Link](https://docs.google.com/document/d/1xFI9DDdO5HZAcu36Y6NL-RTDry5E3WHkfy-ZEWuqbXM/edit?usp=sharing)
+[MVP Link](https://docs.google.com/document/d/1SPoKjuGuox_rV8hgG8dKYgkjcw_z6fG6/)
 
-Team Members: STUDENTS_NETIDS
+Team Members: vedaank2, brianl11
 
-Project Manager: PM_NETID
+Project Manager: xdzhang2, pillai7
