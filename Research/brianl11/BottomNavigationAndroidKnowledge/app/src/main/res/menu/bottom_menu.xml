@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/home"
+        android:title="Home"
+        android:icon="@drawable/baseline_bungalow_24"/>
+    <item
+        android:id="@+id/recipes"
+        android:title="Recipes"
+        android:icon="@drawable/baseline_cake_24"/>
+
+    <item
+        android:id="@+id/menu_fab"
+        android:title=""
+        android:enabled="true"/>
+    <!-- tutorial had enabled as false -->
+    <item
+        android:id="@+id/profile"
+        android:title="Profile"
+        android:icon="@drawable/baseline_bookmark_24"/>
+    <item
+        android:id="@+id/settings"
+        android:title="Settings"
+        android:icon="@drawable/baseline_brightness_low_24"/>
+
+</menu>
