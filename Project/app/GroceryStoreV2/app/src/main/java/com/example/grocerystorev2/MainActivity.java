@@ -156,7 +156,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            result.setText(classes[maxPos]);
+            //result.setText(classes[maxPos]);
+            result.setText("Test");
             Log.d("Classifier", "Predicted: " + classes[maxPos] + " (" + maxConfidence + ")");
 
         } catch (Exception e) {
