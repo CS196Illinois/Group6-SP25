@@ -10,16 +10,18 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 // import com.example.shelfaware.Cs124hproject;
 import com.example.shelfaware.CS124H;
 
-// could add a progress bar for when api call is being made
+
 /**
  * A simple {@link Fragment} subclass.
  * Use the {@link RecipesFragment#newInstance} factory method to
@@ -29,7 +31,7 @@ public class RecipesFragment extends Fragment {
 
     Button inputIngredients;
     EditText ingredientsBox;
-    TextView displayText; // may not be needed later
+    TextView displayText;
     LinearLayout inputIngredientsContainer;
 
     // TODO: Rename parameter arguments, choose names that match
@@ -82,7 +84,11 @@ public class RecipesFragment extends Fragment {
         displayText = view.findViewById(R.id.displayText);
         inputIngredientsContainer = view.findViewById(R.id.inputIngredientsContainer);
 
+        TextView loadingText = view.findViewById(R.id.loadingText);
+        ProgressBar progressBar = view.findViewById(R.id.progressBar);
+
         // show keyboard when clicking on ingredientsBox
+        /*
         ingredientsBox.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -90,6 +96,18 @@ public class RecipesFragment extends Fragment {
                 InputMethodManager imm = (InputMethodManager) requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.showSoftInput(ingredientsBox, InputMethodManager.SHOW_FORCED);
             }
+        });
+
+         */
+
+        ingredientsBox.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                InputMethodManager imm = (InputMethodManager) requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(ingredientsBox.getWindowToken(), 0);
+                ingredientsBox.clearFocus();
+                return true;
+            }
+            return false;
         });
 
 
@@ -132,13 +150,28 @@ public class RecipesFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 String enteredText = ingredientsBox.getText().toString();
+                requireActivity().runOnUiThread(() -> {
+                    loadingText.setVisibility(View.VISIBLE);
+                    progressBar.setVisibility(View.VISIBLE);
+                    displayText.setText("");
+                });
                 new Thread(() -> {
                     try {
                         String recipe = CS124H.getRecipes(enteredText);
-                        requireActivity().runOnUiThread(() -> displayText.setText(recipe));
+                        requireActivity().runOnUiThread(() -> {
+                            loadingText.setVisibility(View.GONE);
+                            progressBar.setVisibility(View.GONE);
+                            displayText.setText(recipe);
+                        });
                     } catch (Exception e) {
                         e.printStackTrace();
-                        requireActivity().runOnUiThread(() -> displayText.setText("Error: " + e.getMessage()));
+                        requireActivity().runOnUiThread(() -> {
+                            loadingText.setVisibility(View.GONE);
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(requireContext(), "API Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            displayText.setText("Something went wrong. Please try again.");
+
+                        });
                     }
                 }).start();
             }

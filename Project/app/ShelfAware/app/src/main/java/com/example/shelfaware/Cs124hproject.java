@@ -13,6 +13,8 @@ interface MyCallback {
  *
  * @author sunilbuddaraju
  */
+
+/// this java class isn't actually used, refer to CS124H instead
 public class Cs124hproject {
 
     public static void getRecipe(MyCallback callback) {
