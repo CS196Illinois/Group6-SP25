@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/sage"
+    tools:context=".RecipesFragment"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
+
+    <!-- TODO: Update blank fragment layout -->
+    <!-- did replace the outside FrameLayout with ScrollView to help with keyboard
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Recipes"
+        android:gravity="center"
+        android:textSize="30sp"
+        android:textColor="@color/white" />
+        -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="center"
+        android:id="@+id/inputIngredientsContainer">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Recipes"
+            android:gravity="center"
+            android:textSize="30sp"
+            android:textColor="@color/white"
+            android:layout_marginTop="16dp"/>
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:hint="Enter ingredients here"
+            android:id="@+id/ingredientsBox"
+            android:height="48dp"
+            android:inputType="textMultiLine"
+            android:scrollbars="vertical"
+            android:maxLines="4"
+            android:gravity="top"
+            android:imeOptions="actionNone"
+            android:focusable="true"
+            android:focusableInTouchMode="true"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enter Ingredients"
+            android:layout_gravity="center_horizontal"
+            android:backgroundTint="@color/white"
+            android:textColor="@color/black"
+            android:layout_marginTop="16dp"
+            android:id="@+id/inputIngredients"/>
+        <!-- TextView below may not be needed later -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:visibility="visible"
+            android:layout_marginTop="16sp"
+            android:id="@+id/displayText"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"/>
+
+
+    </LinearLayout>
+
+
+
+</ScrollView>
