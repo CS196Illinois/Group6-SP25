@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     FloatingActionButton fab;
     BottomNavigationView bottomNavigationView;
+    private HomeFragment homeFragment;
 
     private final ActivityResultLauncher<Intent> pictureActivityLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -37,9 +38,18 @@ public class MainActivity extends AppCompatActivity {
                     String expirationDate = data.getStringExtra("expirationDate");
                     byte[] imageBytes = data.getByteArrayExtra("image");
 
+                    Fragment homeFragment = getSupportFragmentManager().findFragmentById(R.id.frame_layout);
+                    if (homeFragment instanceof HomeFragment) {
+                        ((HomeFragment) homeFragment).addNewItem(imageBytes, classification, expirationDate);
+                    } else {
+                        Log.e("MainActivity", "HomeFragment not found or not attached!");
+                    }
+
+                    /*
                     Bitmap imageBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
 
                     // Pass data to HomeFragment
+
                     HomeFragment homeFragment = new HomeFragment();
                     Bundle bundle = new Bundle();
                     bundle.putParcelable("image", imageBitmap);
@@ -51,6 +61,10 @@ public class MainActivity extends AppCompatActivity {
                     getSupportFragmentManager().beginTransaction()
                             .replace(R.id.frame_layout, homeFragment)
                             .commit();
+
+                     */
+
+
                 }
             });
 
@@ -65,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setBackground(null);
 
         replaceFragment(new HomeFragment());
+        homeFragment = (HomeFragment) getSupportFragmentManager().findFragmentById(R.id.frame_layout);
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -90,17 +105,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-
-
-        /*
-        EdgeToEdge.enable(this);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-         */
 
 
     }

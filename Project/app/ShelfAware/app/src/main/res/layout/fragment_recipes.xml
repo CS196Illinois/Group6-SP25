@@ -39,6 +39,7 @@
         <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:hint="Enter ingredients here"
             android:id="@+id/ingredientsBox"
@@ -57,7 +58,7 @@
             android:layout_gravity="center_horizontal"
             android:backgroundTint="@color/white"
             android:textColor="@color/black"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             android:id="@+id/inputIngredients"/>
         <TextView
             android:id="@+id/loadingText"
@@ -83,7 +84,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:scrollbarStyle="outsideOverlay"
             android:scrollbars="vertical">
 

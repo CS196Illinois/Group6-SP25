@@ -3,9 +3,11 @@ package com.example.shelfaware;
 import static android.app.Activity.RESULT_OK;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -19,120 +21,119 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link HomeFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class HomeFragment extends Fragment {
 
-    private List<ImageItem> imageItems;
+    private RecyclerView recyclerView;
     private ImageAdapter adapter;
-
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private List<ImageItem> imageItemList;
 
     public HomeFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment HomeFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static HomeFragment newInstance(String param1, String param2) {
-        HomeFragment fragment = new HomeFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_home, container, false);
-    }
 
-    @Override
-    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        View view = inflater.inflate(R.layout.fragment_home, container, false);
 
-        RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
+        // Setup RecyclerView
+        recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        imageItems = new ArrayList<>();
+        imageItemList = new ArrayList<>();
 
-        adapter = new ImageAdapter(imageItems);
+        // Setup Adapter
+        adapter = new ImageAdapter(imageItemList);
         recyclerView.setAdapter(adapter);
 
+        // Setup Generate Recipe Button
+        Button generateRecipeButton = view.findViewById(R.id.generateRecipeButton);
+        generateRecipeButton.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "Generating recipe . . .", Toast.LENGTH_SHORT).show(); // DEBUG TOAST
 
-        Bundle bundle = getArguments();
-        if (bundle != null) {
-            Bitmap imageBitmap = bundle.getParcelable("image");
-            String classification = bundle.getString("classification");
-            String expirationDate = bundle.getString("expirationDate");
-
-            // Log to confirm data retrieval
-            Log.d("HomeFragment", "Received data - Classification: " + classification + ", Expiration: " + expirationDate);
-
-            // Add item to list and update adapter
-            if (imageBitmap != null && classification != null && expirationDate != null) {
-                imageItems.add(new ImageItem(imageBitmap, classification, expirationDate));
-                adapter.notifyDataSetChanged(); // Refresh RecyclerView
-            } else {
-                Log.e("HomeFragment", "Data is missing or NULL!");
+            List<String> selectedIngredients = new ArrayList<>();
+            for (ImageItem item : imageItemList) {
+                if (item.isChecked()) {
+                    selectedIngredients.add(item.getTitle());
+                }
             }
 
-        }
-
-
-
-    }
-    /*
-
-    private final ActivityResultLauncher<Intent> pictureActivityLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    Intent data = result.getData();
-                    String classification = data.getStringExtra("classification");
-                    String expirationDate = data.getStringExtra("expirationDate");
-                    byte[] imageBytes = data.getByteArrayExtra("image");
-
-                    Bitmap imageBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                    imageItems.add(new ImageItem(imageBitmap, classification, expirationDate));
-                    adapter.notifyDataSetChanged();
+            if (!selectedIngredients.isEmpty()) {
+                StringBuilder enteredIngredients = new StringBuilder();
+                for (int i = 0; i < selectedIngredients.size(); i++) {
+                    enteredIngredients.append(selectedIngredients.get(i));
+                    if (i != selectedIngredients.size() - 1) {
+                        enteredIngredients.append(", ");
+                    }
                 }
-            });
 
-     */
+                new Thread(() -> {
+                    String recipe = CS124H.getRecipes(enteredIngredients.toString());
+
+                    requireActivity().runOnUiThread(() -> {
+                        showRecipeDialog(recipe);
+                    });
+                }).start();
+
+            } else {
+                Toast.makeText(getContext(), "Please select at least one ingredient!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        return view;
+    }
+
+    private void showRecipeDialog(String recipe) {
+        if (recipe == null || recipe.isEmpty()) {
+            recipe = "Error: No recipe found. Please check your internet connection or try again.";
+        }
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Generated Recipe")
+                .setMessage(recipe)
+                .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    // Add New Item (from PictureActivity result)
+    public void addNewItem(byte[] imageBytes, String classification, String expirationDate) {
+        Uri imageUri = saveImageBytesToCache(imageBytes);
+
+        if (imageUri != null) {
+            ImageItem newItem = new ImageItem(imageUri.toString(), classification, expirationDate, false);
+            imageItemList.add(newItem);
+            adapter.notifyDataSetChanged();
+            recyclerView.scrollToPosition(imageItemList.size() - 1); // Scroll to new item
+        } else {
+            Toast.makeText(getContext(), "Failed to save image.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Uri saveImageBytesToCache(byte[] imageBytes) {
+        try {
+            File cachePath = new File(requireContext().getCacheDir(), "images");
+            cachePath.mkdirs();
+            File file = new File(cachePath, "image_" + System.currentTimeMillis() + ".png");
+            FileOutputStream stream = new FileOutputStream(file);
+            stream.write(imageBytes);
+            stream.close();
+            return androidx.core.content.FileProvider.getUriForFile(requireContext(),
+                    requireContext().getPackageName() + ".provider", file);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
 
 }

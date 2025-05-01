@@ -9,6 +9,7 @@ import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.DatePicker;
 import android.widget.ImageView;
@@ -54,16 +55,11 @@ public class PictureActivity extends AppCompatActivity {
 
     Button selectExpirationDate;
     Button addItem;
-    // PreviewView previewView;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_picture);
-
-        // previewView = findViewById(R.id.viewFinder);
-
 
         fab = findViewById(R.id.fab_picture);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -211,11 +207,17 @@ public class PictureActivity extends AppCompatActivity {
 
             // releases model resources if no longer used
             model.close();
-        } catch (IOException e) { }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (data == null || data.getExtras() == null) {
+            Log.e("PictureActivity", "Camera data is null!");
+        }
+
         if (resultCode == RESULT_OK) {
             if (requestCode == 3) {
                 Bitmap image = (Bitmap) data.getExtras().get("data");
