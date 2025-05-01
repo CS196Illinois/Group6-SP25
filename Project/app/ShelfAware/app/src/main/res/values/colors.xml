@@ -3,6 +3,10 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="sage">#54AC5A</color>
+    <color name="second">#A3A594</color>
     <color name="peach">#FAE6E7</color>
     <color name="forest">#013220</color>
+    <color name="warningPeach">#F3BE9E</color>
+    <color name="warningOrange">#AA3C26</color>
+    <color name="expiredMaroon">#470004</color>
 </resources>

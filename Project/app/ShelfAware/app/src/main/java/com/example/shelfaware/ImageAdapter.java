@@ -1,5 +1,6 @@
 package com.example.shelfaware;
 
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -41,11 +44,38 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
         holder.textView.setText(imageItem.getTitle());
         holder.expirationDateTextView.setText(imageItem.getExpirationDate());
 
-        if (imageItem.isExpiringSoon()) {
+        int expirationStatus = imageItem.getExpirationStatus();
+        int backgroundColor;
+        int textColor;
+
+        if (expirationStatus == -1) { // Expired
+            backgroundColor = ContextCompat.getColor(holder.itemView.getContext(), R.color.expiredMaroon);
+            textColor = ContextCompat.getColor(holder.itemView.getContext(), R.color.peach);
             holder.expiringSoonTextView.setVisibility(View.VISIBLE);
-        } else {
+            holder.expiringSoonTextView.setText("Expired!");
+        } else if (expirationStatus == 2) { // High urgency (≤3 days)
+            backgroundColor = ContextCompat.getColor(holder.itemView.getContext(), R.color.warningOrange);
+            textColor = ContextCompat.getColor(holder.itemView.getContext(), R.color.peach);
+            holder.expiringSoonTextView.setVisibility(View.VISIBLE);
+            holder.expiringSoonTextView.setText("Expiring Soon!");
+        } else if (expirationStatus == 1) { // Medium urgency (≤7 days)
+            backgroundColor = ContextCompat.getColor(holder.itemView.getContext(), R.color.warningPeach);
+            textColor = ContextCompat.getColor(holder.itemView.getContext(), R.color.forest);
+            holder.expiringSoonTextView.setVisibility(View.VISIBLE);
+            holder.expiringSoonTextView.setText("Best Used Soon!");
+        } else { // No urgency
+            backgroundColor = ContextCompat.getColor(holder.itemView.getContext(), R.color.peach);
+            textColor = ContextCompat.getColor(holder.itemView.getContext(), R.color.forest);
             holder.expiringSoonTextView.setVisibility(View.GONE);
         }
+        holder.cardView.setCardBackgroundColor(backgroundColor);
+        holder.textView.setTextColor(textColor);
+        holder.expirationDateTextView.setTextColor(textColor);
+        holder.expiringSoonTextView.setTextColor(textColor);
+        holder.checkBox.setButtonTintList(ColorStateList.valueOf(textColor));
+        holder.deleteFab.setImageTintList(ColorStateList.valueOf(textColor));
+
+
 
         // Set checkbox state
         holder.checkBox.setChecked(imageItem.isChecked());
@@ -72,6 +102,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
+        public CardView cardView;
         public ImageView imageView;
         public TextView textView;
         public TextView expirationDateTextView;
@@ -81,6 +112,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
 
         public ViewHolder(View itemView) {
             super(itemView);
+            cardView = itemView.findViewById(R.id.cardView);
             imageView = itemView.findViewById(R.id.classifiedImageView);
             textView = itemView.findViewById(R.id.classificationTextView);
             expirationDateTextView = itemView.findViewById(R.id.expirationDateTextView);
@@ -89,4 +121,6 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
             checkBox = itemView.findViewById(R.id.checkBox);
         }
     }
+
+
 }

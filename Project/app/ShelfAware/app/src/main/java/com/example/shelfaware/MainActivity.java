@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 
@@ -43,26 +44,10 @@ public class MainActivity extends AppCompatActivity {
                         ((HomeFragment) homeFragment).addNewItem(imageBytes, classification, expirationDate);
                     } else {
                         Log.e("MainActivity", "HomeFragment not found or not attached!");
+                        Log.d("MainActivity", "Switching to HomeFragment with data: " + classification + ", Expiration: " + expirationDate);
+                        switchToHomeFragment(imageBytes, classification, expirationDate);
+
                     }
-
-                    /*
-                    Bitmap imageBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-
-                    // Pass data to HomeFragment
-
-                    HomeFragment homeFragment = new HomeFragment();
-                    Bundle bundle = new Bundle();
-                    bundle.putParcelable("image", imageBitmap);
-                    bundle.putString("classification", classification);
-                    bundle.putString("expirationDate", expirationDate);
-                    homeFragment.setArguments(bundle);
-
-                    // Replace current fragment with HomeFragment
-                    getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.frame_layout, homeFragment)
-                            .commit();
-
-                     */
 
 
                 }
@@ -78,19 +63,19 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNavigationView.setBackground(null);
 
-        replaceFragment(new HomeFragment());
+        replaceFragment(new HomeFragment(), "HomeFragment");
         homeFragment = (HomeFragment) getSupportFragmentManager().findFragmentById(R.id.frame_layout);
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.home) {
-                replaceFragment(new HomeFragment());
+                replaceFragment(new HomeFragment(), "HomeFragment");  // Correct tag usage
             } else if (itemId == R.id.recipes) {
-                replaceFragment(new RecipesFragment());
+                replaceFragment(new RecipesFragment(), "RecipesFragment");  // Assign correct tag
             } else if (itemId == R.id.profile) {
-                replaceFragment(new ProfileFragment());
+                replaceFragment(new ProfileFragment(), "ProfileFragment");  // Assign correct tag
             } else if (itemId == R.id.settings) {
-                replaceFragment(new SettingsFragment());
+                replaceFragment(new SettingsFragment(), "SettingsFragment");  // Assign correct tag
             }
             return true;
         });
@@ -100,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(MainActivity.this, PictureActivity.class);
-                //startActivity(intent);
                 pictureActivityLauncher.launch(intent);
             }
         });
@@ -108,40 +92,38 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-    /*
-    private final ActivityResultLauncher<Intent> pictureActivityLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Intent data = result.getData();
 
-                    String classification = data.getStringExtra("classification");
-                    String expirationDate = data.getStringExtra("expirationDate");
-                    byte[] imageBytes = data.getByteArrayExtra("image");
-
-                    Bitmap imageBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-
-                    // Pass data to HomeFragment
-                    HomeFragment homeFragment = new HomeFragment();
-                    Bundle bundle = new Bundle();
-                    bundle.putParcelable("image", imageBitmap);
-                    bundle.putString("classification", classification);
-                    bundle.putString("expirationDate", expirationDate);
-                    homeFragment.setArguments(bundle);
-
-                    // Replace current fragment with HomeFragment
-                    getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.frame_layout, homeFragment)
-                            .commit();
-                }
-            });
-
-     */
-
-    private void replaceFragment(Fragment fragment) {
+    private void replaceFragment(Fragment fragment, String tag) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(R.id.frame_layout, fragment);
+        fragmentTransaction.replace(R.id.frame_layout, fragment, tag);
         fragmentTransaction.commit();
+    }
+    private void switchToHomeFragment(byte[] imageBytes, String classification, String expirationDate) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        HomeFragment homeFragment = (HomeFragment) fragmentManager.findFragmentByTag("HomeFragment");
+
+        if (homeFragment == null || !homeFragment.isAdded()) {
+            homeFragment = new HomeFragment();
+
+            fragmentManager.beginTransaction()
+                    .add(R.id.frame_layout, homeFragment, "HomeFragment")
+                    .commitAllowingStateLoss();
+            fragmentManager.executePendingTransactions();
+        }
+
+        // Wait for HomeFragment to be fully attached before adding an item
+        fragmentManager.registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
+            @Override
+            public void onFragmentResumed(FragmentManager fm, Fragment f) {
+                if (f instanceof HomeFragment) {
+                    ((HomeFragment) f).addNewItem(imageBytes, classification, expirationDate);
+                    fragmentManager.unregisterFragmentLifecycleCallbacks(this); // Clean up callback
+                }
+            }
+        }, false);
+
+        bottomNavigationView.setSelectedItemId(R.id.home);
     }
 
 

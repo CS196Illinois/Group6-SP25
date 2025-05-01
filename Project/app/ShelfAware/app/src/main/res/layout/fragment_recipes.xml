@@ -80,30 +80,6 @@
             android:id="@+id/progressBar"
             style="android:attr/progressBarStyleLarge"/>
 
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginTop="12dp"
-            android:scrollbarStyle="outsideOverlay"
-            android:scrollbars="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text=""
-                android:textSize="16sp"
-                android:textColor="@color/white"
-                android:visibility="visible"
-                android:layout_marginTop="16sp"
-                android:id="@+id/displayText"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"/>
-
-        </ScrollView>
-
-
-
 
     </LinearLayout>
 

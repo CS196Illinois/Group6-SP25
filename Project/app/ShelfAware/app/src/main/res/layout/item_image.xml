@@ -3,11 +3,12 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="100dp"
     android:elevation="6dp"
     app:cardCornerRadius="12dp"
     app:cardBackgroundColor="@color/peach"
-    android:layout_margin="8dp">
+    android:layout_margin="8dp"
+    android:id="@+id/cardView">
 
 
     <LinearLayout
@@ -21,7 +22,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:buttonTint="@color/forest"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="2dp"
             android:id="@+id/checkBox"/>
 
         <ImageView
@@ -29,7 +30,7 @@
             android:layout_height="60dp"
             android:scaleType="centerCrop"
             android:layout_gravity="center_vertical"
-            android:layout_marginEnd="16dp"
+            android:layout_marginEnd="12dp"
             android:id="@+id/classifiedImageView"/>
 
         <TextView
@@ -52,16 +53,6 @@
                 android:layout_height="wrap_content"
                 android:textSize="14sp"
                 android:textColor="@color/forest"
-                android:visibility="gone"
-                android:text="Expiring Soon!"
-                android:layout_marginEnd="8dp"
-                android:id="@+id/expiringSoonTextView"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:textColor="@color/forest"
                 android:id="@+id/expirationDateTextView"
                 android:layout_gravity="center_vertical"/>
 
@@ -69,16 +60,29 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/deleteFab"
-                android:backgroundTint="@color/peach"
-                style="?attr/materialButtonOutlinedStyle"
+                android:backgroundTint="@android:color/transparent"
                 android:elevation="0dp"
                 app:borderWidth="0dp"
                 app:maxImageSize="36dp"
                 android:layout_gravity="center_vertical"
-                android:tint="@color/forest"
+                style="?attr/borderlessButtonStyle"
+                app:tint="@color/black"
                 android:src="@drawable/baseline_remove_circle_24"
-                android:scaleType="center"/>
+                android:scaleType="center"
+                app:rippleColor="@android:color/transparent"/>
         </LinearLayout>
 
     </LinearLayout>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@color/forest"
+        android:visibility="gone"
+        android:text="Expiring Soon!"
+        android:layout_marginEnd="8dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="8dp"
+        android:id="@+id/expiringSoonTextView"/>
+
 </androidx.cardview.widget.CardView>

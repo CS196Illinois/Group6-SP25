@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import android.app.AlertDialog;
 
 import android.os.SystemClock;
 import android.view.LayoutInflater;
@@ -21,57 +22,14 @@ import android.widget.Toast;
 // import com.example.shelfaware.Cs124hproject;
 import com.example.shelfaware.CS124H;
 
-
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link RecipesFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class RecipesFragment extends Fragment {
 
     Button inputIngredients;
     EditText ingredientsBox;
-    TextView displayText;
     LinearLayout inputIngredientsContainer;
-
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
 
     public RecipesFragment() {
         // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment RecipesFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static RecipesFragment newInstance(String param1, String param2) {
-        RecipesFragment fragment = new RecipesFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
@@ -81,24 +39,11 @@ public class RecipesFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_recipes, container, false);
         inputIngredients = view.findViewById(R.id.inputIngredients);
         ingredientsBox = view.findViewById(R.id.ingredientsBox);
-        displayText = view.findViewById(R.id.displayText);
         inputIngredientsContainer = view.findViewById(R.id.inputIngredientsContainer);
 
         TextView loadingText = view.findViewById(R.id.loadingText);
         ProgressBar progressBar = view.findViewById(R.id.progressBar);
 
-        // show keyboard when clicking on ingredientsBox
-        /*
-        ingredientsBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ingredientsBox.requestFocus();
-                InputMethodManager imm = (InputMethodManager) requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.showSoftInput(ingredientsBox, InputMethodManager.SHOW_FORCED);
-            }
-        });
-
-         */
 
         ingredientsBox.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -111,49 +56,17 @@ public class RecipesFragment extends Fragment {
         });
 
 
-        /*
         inputIngredients.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ingredientsBox.setVisibility(View.VISIBLE);
-                ingredientsBox.requestFocus();
-                // show keyboard
-                InputMethodManager imm = (InputMethodManager) requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.showSoftInput(ingredientsBox, InputMethodManager.SHOW_FORCED);
-                //imm.showSoftInput(ingredientsBox, InputMethodManager.SHOW_IMPLICIT);
-            }
-        });
-        */
-
-
-        // retrieve text
-        /*
-        inputIngredients.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String enteredText = "temp";
-                displayText.setText(enteredText);
-                Cs124hproject.getRecipe(new MyCallback() {
-                                            @Override
-                                            public void onResult(String result) {
-                                                displayText.setText(result);
-                                            }
-                                        });
-                displayText.setText("ran");
-            }
-        });
-        */
-
-
-
-        inputIngredients.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String enteredText = ingredientsBox.getText().toString();
+                String enteredText = ingredientsBox.getText().toString().trim();
+                if (enteredText.isEmpty()) {
+                    Toast.makeText(requireContext(), "Please enter ingredients!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 requireActivity().runOnUiThread(() -> {
                     loadingText.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.VISIBLE);
-                    displayText.setText("");
                 });
                 new Thread(() -> {
                     try {
@@ -161,7 +74,8 @@ public class RecipesFragment extends Fragment {
                         requireActivity().runOnUiThread(() -> {
                             loadingText.setVisibility(View.GONE);
                             progressBar.setVisibility(View.GONE);
-                            displayText.setText(recipe);
+                            showRecipeDialog(recipe);
+
                         });
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -169,39 +83,14 @@ public class RecipesFragment extends Fragment {
                             loadingText.setVisibility(View.GONE);
                             progressBar.setVisibility(View.GONE);
                             Toast.makeText(requireContext(), "API Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                            displayText.setText("Something went wrong. Please try again.");
-
+                            showRecipeDialog("Something went wrong. Please try again.");
                         });
+
                     }
                 }).start();
             }
         });
 
-
-
-        /*
-        ingredientsBox.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (!hasFocus) {
-                    // get entered text
-                    String enteredText = ingredientsBox.getText().toString();
-                    // Toast.makeText(getActivity(), enteredText, Toast.LENGTH_SHORT).show();
-                    displayText.setText(enteredText);
-                }
-            }
-        });
-        */
-        /* the code below was original for enter ingredients button
-        inputIngredients.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String enteredText = ingredientsBox.getText().toString();
-                displayText.setText(enteredText);
-            }
-        });
-
-        */
 
         view.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -216,5 +105,15 @@ public class RecipesFragment extends Fragment {
         });
 
         return view;
+    }
+    private void showRecipeDialog(String recipe) {
+        if (recipe == null || recipe.isEmpty()) {
+            recipe = "Error: No recipe found. Please check your internet connection or try again.";
+        }
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Generated Recipe")
+                .setMessage(recipe)
+                .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 }

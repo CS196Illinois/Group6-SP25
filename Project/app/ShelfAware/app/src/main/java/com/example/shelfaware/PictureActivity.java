@@ -8,6 +8,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -44,6 +45,7 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.TimeZone;
 
 public class PictureActivity extends AppCompatActivity {
 
@@ -114,8 +116,11 @@ public class PictureActivity extends AppCompatActivity {
                 // Handle the selected date
                 datePicker.addOnPositiveButtonClickListener(selection -> {
                     // Convert the selected timestamp into a readable date
-                    Calendar calendar = Calendar.getInstance();
+                    TimeZone timeZone = TimeZone.getDefault();
+                    Calendar calendar = Calendar.getInstance(timeZone);
                     calendar.setTimeInMillis(selection);
+
+                    calendar.add(Calendar.DAY_OF_MONTH, 1);
 
                     int year = calendar.get(Calendar.YEAR);
                     int month = calendar.get(Calendar.MONTH);
@@ -133,24 +138,25 @@ public class PictureActivity extends AppCompatActivity {
         addItem.setOnClickListener(view -> {
             String classification = result.getText().toString();
             String expirationDate = selectExpirationDate.getText().toString();
-            Bitmap imageBitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
 
             if (expirationDate.equals("Select Expiration Date") || expirationDate.isEmpty()) {
                 Toast.makeText(this, "Please select an expiration date", Toast.LENGTH_SHORT).show();
                 return;
             }
 
+            Bitmap imageBitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
             // if SQLite/Room:
+            Intent intent = new Intent();
+            intent.putExtra("classification", classification);
+            intent.putExtra("expirationDate", expirationDate);
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             imageBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
             byte[] byteArray = stream.toByteArray();
 
-            Intent intent = new Intent();
-            intent.putExtra("classification", classification);
-            intent.putExtra("expirationDate", expirationDate);
+
             intent.putExtra("image", byteArray);
             setResult(RESULT_OK, intent);
-            finish();
+            new Handler().postDelayed(() -> finish(), 200);
         });
 
         /*

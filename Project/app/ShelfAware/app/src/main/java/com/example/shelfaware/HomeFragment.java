@@ -27,9 +27,14 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class HomeFragment extends Fragment {
 
@@ -80,7 +85,6 @@ public class HomeFragment extends Fragment {
 
                 new Thread(() -> {
                     String recipe = CS124H.getRecipes(enteredIngredients.toString());
-
                     requireActivity().runOnUiThread(() -> {
                         showRecipeDialog(recipe);
                     });
@@ -107,11 +111,30 @@ public class HomeFragment extends Fragment {
 
     // Add New Item (from PictureActivity result)
     public void addNewItem(byte[] imageBytes, String classification, String expirationDate) {
+        Log.d("HomeFragment", "Adding item: " + classification + ", Expiration: " + expirationDate);
         Uri imageUri = saveImageBytesToCache(imageBytes);
 
         if (imageUri != null) {
             ImageItem newItem = new ImageItem(imageUri.toString(), classification, expirationDate, false);
             imageItemList.add(newItem);
+
+            Collections.sort(imageItemList, (item1, item2) -> {
+                try {
+                    SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy", Locale.getDefault());
+
+                    // Convert expiration date format
+                    Date date1 = inputFormat.parse(item1.getExpirationDate());
+                    Date date2 = inputFormat.parse(item2.getExpirationDate());
+
+                    if (date1 == null || date2 == null) return 0; // Prevents sorting errors
+
+                    return date1.compareTo(date2); // Oldest date first
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    return 0;
+                }
+            });
+
             adapter.notifyDataSetChanged();
             recyclerView.scrollToPosition(imageItemList.size() - 1); // Scroll to new item
         } else {
