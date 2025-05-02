@@ -142,14 +142,17 @@ public class HomeFragment extends Fragment {
             Collections.sort(imageItemList, (item1, item2) -> {
                 try {
                     SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy", Locale.getDefault());
-
-                    // Convert expiration date format
                     Date date1 = inputFormat.parse(item1.getExpirationDate());
                     Date date2 = inputFormat.parse(item2.getExpirationDate());
 
-                    if (date1 == null || date2 == null) return 0; // Prevents sorting errors
+                    if (date1 == null || date2 == null) return 0;
 
-                    return date1.compareTo(date2); // Oldest date first
+                    // First, compare expiration dates
+                    int dateComparison = date1.compareTo(date2);
+                    if (dateComparison != 0) return dateComparison; // If dates are different, sort by date
+
+                    // If expiration dates are the same, sort alphabetically by title
+                    return item1.getTitle().compareToIgnoreCase(item2.getTitle());
                 } catch (ParseException e) {
                     e.printStackTrace();
                     return 0;
@@ -195,24 +198,40 @@ public class HomeFragment extends Fragment {
 
     private void loadItemsFromFirebase() {
         DatabaseReference itemsRef = FirebaseDatabase.getInstance().getReference("items");
-
         itemsRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if (!isAdded()) return; // ensure fragment is attached before updating UI
-
+                if (!isAdded()) return;
                 imageItemList.clear();
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     ImageItem item = snapshot.getValue(ImageItem.class);
                     imageItemList.add(item);
                 }
-                adapter.notifyDataSetChanged(); // Refresh RecyclerView safely
-            }
+                Collections.sort(imageItemList, (item1, item2) -> {
+                    try {
+                        SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy", Locale.getDefault());
+                        Date date1 = inputFormat.parse(item1.getExpirationDate());
+                        Date date2 = inputFormat.parse(item2.getExpirationDate());
 
+                        if (date1 == null || date2 == null) return 0;
+
+                        // First, compare expiration dates
+                        int dateComparison = date1.compareTo(date2);
+                        if (dateComparison != 0) return dateComparison; // If dates are different, sort by date
+
+                        // If expiration dates are the same, sort alphabetically by title
+                        return item1.getTitle().compareToIgnoreCase(item2.getTitle());
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                        return 0;
+                    }
+                });
+                adapter.notifyDataSetChanged();
+            }
             @Override
             public void onCancelled(DatabaseError error) {
                 Log.e("Firebase", "Error retrieving data: " + error.getMessage());
-                if (isAdded()) { // prevent crashes if fragment is detached
+                if (isAdded()) {
                     loadFromLocalStorage();
                 }
             }
