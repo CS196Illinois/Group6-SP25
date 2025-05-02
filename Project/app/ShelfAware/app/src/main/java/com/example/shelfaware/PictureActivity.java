@@ -217,18 +217,18 @@ public class PictureActivity extends AppCompatActivity {
 
     public void classifyImage(Bitmap image) {
 
-        String[] classes = {"Golden-Delicious", "Granny-Smith", "Pink-Lady", "Red-Delicious", "Royal-Gala", "Avocado",
-                "Banana", "Kiwi", "Lemon", "Lime", "Mango", "Cantaloupe", "Galia-Melon", "Honeydew-Melon", "Watermelon",
-                "Nectarine", "Orange", "Papaya", "Passion-Fruit", "Peach", "Anjou", "Conference", "Kaiser", "Pineapple",
-                "Plum", "Pomegranate", "Red-Grapefruit", "Satsumas", "Bravo-Apple-Juice", "Bravo-Orange-Juice", "God-Morgon-Apple-Juice",
-                "God-Morgon-Orange-Juice", "God-Morgon-Orange-Red-Grapefruit-Juice", "God-Morgon-Red-Grapefruit-Juice", "Tropicana-Apple-Juice",
-                "Tropicana-Golden-Grapefruit", "Tropicana-Juice-Smooth", "Tropicana-Mandarin-Morning", "Arla-Ecological-Medium-Fat-Milk", "Arla-Lactose-Medium-Fat-Milk",
-                "Arla-Medium-Fat-Milk", "Arla-Standard-Milk", "Garant-Ecological-Medium-Fat-Milk", "Garant-Ecological-Standard-Milk", "Oatly-Natural-Oatghurt", "Oatly-Oat-Milk",
-                "Arla-Ecological-Sour-Cream", "Arla-Sour-Cream", "Arla-Sour-Milk", "Alpro-Blueberry-Soyghurt", "Alpro-Vanilla-Soyghurt", "Alpro-Fresh-Soy-Milk",
-                "Alpro-Shelf-Soy-Milk", "Arla-Mild-Vanilla-Yoghurt", "Arla-Natural-Mild-Low-Fat-Yoghurt", "Arla-Natural-Yoghurt", "Valio-Vanilla-Yoghurt",
-                "Yoggi-Strawberry-Yoghurt", "Yoggi-Vanilla-Yoghurt", "Asparagus", "Aubergine", "Cabbage", "Carrots", "Cucumber", "Garlic", "Ginger", "Leek",
-                "Brown-Cap-Mushroom", "Yellow-Onion", "Green-Bell-Pepper", "Orange-Bell-Pepper", "Red-Bell-Pepper", "Yellow-Bell-Pepper", "Floury-Potato",
-                "Solid-Potato", "Sweet-Potato", "Red-Beet", "Beef-Tomato", "Regular-Tomato", "Vine-Tomato", "Zucchini"};
+        String[] classes = {"Golden Delicious", "Granny Smith", "Pink Lady", "Red Delicious", "Royal Gala", "Avocado",
+                "Banana", "Kiwi", "Lemon", "Lime", "Mango", "Cantaloupe", "Galia Melon", "Honeydew", "Watermelon",
+                "Nectarine", "Orange", "Papaya", "Passion Fruit", "Peach", "Pear", "Pear", "Pear", "Pineapple",
+                "Plum", "Pomegranate", "Grapefruit", "Satsumas", "Apple Juice", "Orange Juice", "Apple Juice",
+                "Orange Juice", "Grapefruit Juice", "Grapefruit Juice", "Apple Juice",
+                "Grapefruit", "Orange Juice", "Orange Juice", "Milk", "Milk",
+                "Milk", "Milk", "Milk", "Milk", "Oatgurt", "Milk",
+                "Sour Cream", "Sour Cream", "Milk", "Soygurt", "Soygurt", "Soy Milk",
+                "Soy Milk", "Yogurt", "Yogurt", "Yogurt", "Yogurt",
+                "Yogurt", "Yogurt", "Asparagus", "Aubergine", "Cabbage", "Carrots", "Cucumber", "Garlic", "Ginger", "Leek",
+                "Mushroom", "Onion", "Green Bell Pepper", "Orange Bell Pepper", "Red Bell Pepper", "Yellow Bell Pepper", "Potato",
+                "Potato", "Sweet Potato", "Beet", "Tomato", "Tomato", "Tomato", "Zucchini"};
 
         try {
             result.setText("Classifying...");
