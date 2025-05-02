@@ -3,6 +3,7 @@ package com.example.shelfaware;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.ThumbnailUtils;
@@ -10,6 +11,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.DatePicker;
@@ -19,6 +22,9 @@ import android.widget.Button;
 import android.Manifest;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Calendar;
 
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -35,12 +41,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import com.example.shelfaware.ml.Model;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import org.tensorflow.lite.DataType;
+import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
+import org.tensorflow.lite.DataType;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -54,9 +60,9 @@ public class PictureActivity extends AppCompatActivity {
     TextView result;
     FloatingActionButton fab;
     int imageSize = 224; // depends on the model
-
     Button selectExpirationDate;
     Button addItem;
+    private Interpreter tfliteInterpreter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +74,7 @@ public class PictureActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(PictureActivity.this, MainActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
             }
         });
@@ -159,6 +166,44 @@ public class PictureActivity extends AppCompatActivity {
             new Handler().postDelayed(() -> finish(), 200);
         });
 
+        result.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (s.toString().trim().isEmpty()) {
+                    result.setError("Classification cannot be empty!");
+                }
+            }
+        });
+
+        result.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                result.setCursorVisible(true); // Show cursor when user clicks inside
+            } else {
+                result.setCursorVisible(false);
+                result.clearFocus(); // Remove focus and stop blinking when clicking outside
+            }
+        });
+        findViewById(android.R.id.content).setOnTouchListener((v, event) -> {
+            result.clearFocus();
+            result.setCursorVisible(false);
+            v.performClick(); // This ensures accessibility and proper handling
+            return false;
+        });
+
+        try {
+            Log.d("MainActivity", "Loading model...");
+            tfliteInterpreter = new Interpreter(loadModelFile());
+            Log.d("MainActivity", "Model loaded successfully");
+        } catch (IOException e) {
+            Log.e("MainActivity", "Error initializing model: " + e.getMessage());
+        }
+
         /*
         EdgeToEdge.enable(this);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -171,34 +216,48 @@ public class PictureActivity extends AppCompatActivity {
     }
 
     public void classifyImage(Bitmap image) {
+
+        String[] classes = {"Golden-Delicious", "Granny-Smith", "Pink-Lady", "Red-Delicious", "Royal-Gala", "Avocado",
+                "Banana", "Kiwi", "Lemon", "Lime", "Mango", "Cantaloupe", "Galia-Melon", "Honeydew-Melon", "Watermelon",
+                "Nectarine", "Orange", "Papaya", "Passion-Fruit", "Peach", "Anjou", "Conference", "Kaiser", "Pineapple",
+                "Plum", "Pomegranate", "Red-Grapefruit", "Satsumas", "Bravo-Apple-Juice", "Bravo-Orange-Juice", "God-Morgon-Apple-Juice",
+                "God-Morgon-Orange-Juice", "God-Morgon-Orange-Red-Grapefruit-Juice", "God-Morgon-Red-Grapefruit-Juice", "Tropicana-Apple-Juice",
+                "Tropicana-Golden-Grapefruit", "Tropicana-Juice-Smooth", "Tropicana-Mandarin-Morning", "Arla-Ecological-Medium-Fat-Milk", "Arla-Lactose-Medium-Fat-Milk",
+                "Arla-Medium-Fat-Milk", "Arla-Standard-Milk", "Garant-Ecological-Medium-Fat-Milk", "Garant-Ecological-Standard-Milk", "Oatly-Natural-Oatghurt", "Oatly-Oat-Milk",
+                "Arla-Ecological-Sour-Cream", "Arla-Sour-Cream", "Arla-Sour-Milk", "Alpro-Blueberry-Soyghurt", "Alpro-Vanilla-Soyghurt", "Alpro-Fresh-Soy-Milk",
+                "Alpro-Shelf-Soy-Milk", "Arla-Mild-Vanilla-Yoghurt", "Arla-Natural-Mild-Low-Fat-Yoghurt", "Arla-Natural-Yoghurt", "Valio-Vanilla-Yoghurt",
+                "Yoggi-Strawberry-Yoghurt", "Yoggi-Vanilla-Yoghurt", "Asparagus", "Aubergine", "Cabbage", "Carrots", "Cucumber", "Garlic", "Ginger", "Leek",
+                "Brown-Cap-Mushroom", "Yellow-Onion", "Green-Bell-Pepper", "Orange-Bell-Pepper", "Red-Bell-Pepper", "Yellow-Bell-Pepper", "Floury-Potato",
+                "Solid-Potato", "Sweet-Potato", "Red-Beet", "Beef-Tomato", "Regular-Tomato", "Vine-Tomato", "Zucchini"};
+
         try {
-            Model model = Model.newInstance(getApplicationContext());
-            // create inputs for reference
-            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(new int[]{1, 224, 224, 3}, DataType.FLOAT32);
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3); // 4 b/c that's how many bytes a float takes up
+            result.setText("Classifying...");
+
+            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3);
             byteBuffer.order(ByteOrder.nativeOrder());
 
             int[] intValues = new int[imageSize * imageSize];
             image.getPixels(intValues, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
+
             int pixel = 0;
-            // iterate over each pixel and extract RGB values; add those values individually to the byte buffer
             for (int i = 0; i < imageSize; i++) {
                 for (int j = 0; j < imageSize; j++) {
-                    int val = intValues[pixel++]; // R G B
-                    byteBuffer.putFloat(((val >> 16) & 0xFF) * (1.f / 1)); // divides by 1 b/c tflite model already handles the preprocessing when it divided by 255
-                    byteBuffer.putFloat(((val >> 8) & 0xFF) * (1.f / 1));
-                    byteBuffer.putFloat((val & 0xFF) * (1.f / 1));
+                    int val = intValues[pixel++];
+                    byteBuffer.putFloat(((val >> 16) & 0xFF) / 127.5f - 1.0f); // R
+                    byteBuffer.putFloat(((val >> 8) & 0xFF) / 127.5f - 1.0f);  // G
+                    byteBuffer.putFloat((val & 0xFF) / 127.5f - 1.0f);         // B
                 }
             }
 
+            TensorBuffer inputFeature0 = TensorBuffer.createFixedSize(
+                    new int[]{1, imageSize, imageSize, 3}, org.tensorflow.lite.DataType.FLOAT32);
             inputFeature0.loadBuffer(byteBuffer);
 
-            // runs model inference and gets result
-            Model.Outputs outputs = model.process(inputFeature0);
-            TensorBuffer outputFeature0 = outputs.getOutputFeature0AsTensorBuffer();
+            TensorBuffer outputFeature0 = TensorBuffer.createFixedSize(
+                    new int[]{1, 81}, org.tensorflow.lite.DataType.FLOAT32); // 81 classes
+            tfliteInterpreter.run(inputFeature0.getBuffer(), outputFeature0.getBuffer());
 
             float[] confidences = outputFeature0.getFloatArray();
-            // find index of class with biggest confidence
             int maxPos = 0;
             float maxConfidence = 0;
             for (int i = 0; i < confidences.length; i++) {
@@ -208,13 +267,11 @@ public class PictureActivity extends AppCompatActivity {
                 }
             }
 
-            String[] classes = {"Apple", "Banana", "Orange"};
-            result.setText(classes[maxPos]);
 
-            // releases model resources if no longer used
-            model.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            result.setText(classes[maxPos]);
+            Log.d("Classifier", "Predicted: " + classes[maxPos] + " (" + maxConfidence + ")");
+        } catch (Exception e) {
+            Log.e("Classifier", "Error during classification: " + e.getMessage());
         }
     }
 
@@ -255,6 +312,21 @@ public class PictureActivity extends AppCompatActivity {
                 addItem.setVisibility(View.VISIBLE);
             }
             super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+    private MappedByteBuffer loadModelFile() throws IOException {
+        AssetFileDescriptor fileDescriptor = this.getAssets().openFd("grocery_model.tflite");
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (tfliteInterpreter != null) {
+            tfliteInterpreter.close();
         }
     }
 

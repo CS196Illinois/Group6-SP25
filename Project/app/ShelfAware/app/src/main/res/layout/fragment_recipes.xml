@@ -47,7 +47,7 @@
             android:inputType="textMultiLine"
             android:scrollbars="vertical"
             android:maxLines="4"
-            android:gravity="top"
+            android:gravity="start|top"
             android:imeOptions="actionNone"
             android:focusable="true"
             android:focusableInTouchMode="true"/>

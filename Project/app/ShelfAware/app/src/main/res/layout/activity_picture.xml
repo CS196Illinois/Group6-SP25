@@ -33,16 +33,19 @@
         android:id="@+id/classified"
         android:layout_below="@+id/imageView"
         android:layout_marginTop="10sp"/>
-    <TextView
+    <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:text=""
+        android:hint="Item Name"
         android:textColor="@color/sage"
         android:textStyle="bold"
         android:textSize="27sp"
         android:id="@+id/result"
-        android:layout_below="@+id/classified"/>
+        android:layout_below="@+id/classified"
+        android:maxLength="50"
+        />
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -71,7 +74,6 @@
         android:drawableTint="@color/forest"
         android:layout_above="@id/take"
         android:visibility="invisible"/>
-
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -96,13 +98,6 @@
         android:textStyle="bold"
         android:backgroundTint="@color/sage"
         android:textColor="@color/white"/>
-    <!--
-    <androidx.camera.view.PreviewView
-        android:id="@+id/viewFinder"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-        -->
-
 
 
 </RelativeLayout>

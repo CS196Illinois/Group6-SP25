@@ -29,6 +29,9 @@ android {
     buildFeatures {
         mlModelBinding true
     }
+    aaptOptions {
+        noCompress "tflite"
+    }
 }
 
 dependencies {
@@ -37,9 +40,17 @@ dependencies {
     implementation libs.material
     implementation libs.activity
     implementation libs.constraintlayout
-    implementation libs.tensorflow.lite.support
+    implementation(libs.tensorflow.lite) {
+        exclude group: 'com.google.ai.edge', module: 'litert-api'
+        exclude group: 'org.tensorflow', module: 'tensorflow-lite-api'
+    }
+    implementation(libs.tensorflow.lite.support) {
+        exclude group: 'com.google.ai.edge', module: 'litert-api'
+        exclude group: 'org.tensorflow', module: 'tensorflow-lite-api'
+    }
     implementation libs.tensorflow.lite.metadata
     implementation libs.tensorflow.lite.gpu
+    implementation libs.litert.api
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
