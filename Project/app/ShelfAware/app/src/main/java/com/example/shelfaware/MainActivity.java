@@ -23,6 +23,8 @@ import androidx.fragment.app.FragmentTransaction;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,6 +57,10 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference itemsRef = database.getReference("items");
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -80,7 +86,6 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
 
-
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -88,9 +93,6 @@ public class MainActivity extends AppCompatActivity {
                 pictureActivityLauncher.launch(intent);
             }
         });
-
-
-
     }
 
     private void replaceFragment(Fragment fragment, String tag) {

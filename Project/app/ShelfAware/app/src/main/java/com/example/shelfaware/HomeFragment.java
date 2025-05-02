@@ -4,7 +4,9 @@ import static android.app.Activity.RESULT_OK;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -24,9 +26,19 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import android.content.SharedPreferences;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -61,6 +73,15 @@ public class HomeFragment extends Fragment {
         // Setup Adapter
         adapter = new ImageAdapter(imageItemList);
         recyclerView.setAdapter(adapter);
+
+
+        try {
+            loadItemsFromFirebase(); // call to retrieve data when the fragment is created
+        } catch (Exception e) {
+            Log.e("Firebase", "Firebase is not set up: " + e.getMessage());
+            Toast.makeText(getContext(), "Firebase setup error. Some features may not work.", Toast.LENGTH_SHORT).show();
+        }
+
 
         // Setup Generate Recipe Button
         Button generateRecipeButton = view.findViewById(R.id.generateRecipeButton);
@@ -137,6 +158,8 @@ public class HomeFragment extends Fragment {
 
             adapter.notifyDataSetChanged();
             recyclerView.scrollToPosition(imageItemList.size() - 1); // Scroll to new item
+
+            saveItem(imageUri.toString(), classification, expirationDate, newItem.isExpiringSoon());
         } else {
             Toast.makeText(getContext(), "Failed to save image.", Toast.LENGTH_SHORT).show();
         }
@@ -157,7 +180,71 @@ public class HomeFragment extends Fragment {
             return null;
         }
     }
+    public void saveItem(String imageUri, String title, String expirationDate, boolean expiringSoon) {
+        DatabaseReference itemsRef = FirebaseDatabase.getInstance().getReference("items");
 
+        String itemId = itemsRef.push().getKey(); // Generate unique ID
+        ImageItem newItem = new ImageItem(itemId, imageUri, title, expirationDate, expiringSoon);
+
+        if (itemsRef != null) {
+            itemsRef.child(itemId).setValue(newItem); // Stores item with unique key in Firebase
+        } else {
+            saveToLocalStorage(newItem); // save locally if Firebase isn’t available
+        }
+    }
+
+    private void loadItemsFromFirebase() {
+        DatabaseReference itemsRef = FirebaseDatabase.getInstance().getReference("items");
+
+        itemsRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (!isAdded()) return; // ensure fragment is attached before updating UI
+
+                imageItemList.clear();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    ImageItem item = snapshot.getValue(ImageItem.class);
+                    imageItemList.add(item);
+                }
+                adapter.notifyDataSetChanged(); // Refresh RecyclerView safely
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                Log.e("Firebase", "Error retrieving data: " + error.getMessage());
+                if (isAdded()) { // prevent crashes if fragment is detached
+                    loadFromLocalStorage();
+                }
+            }
+        });
+    }
+    private void loadFromLocalStorage() {
+        SharedPreferences prefs = requireContext().getSharedPreferences("local_data", Context.MODE_PRIVATE);
+        Gson gson = new Gson();
+        String json = prefs.getString("items", "[]"); // Retrieve stored data
+        Type type = new TypeToken<List<ImageItem>>() {}.getType();
+        List<ImageItem> localItems = gson.fromJson(json, type);
+
+        imageItemList.clear();
+        imageItemList.addAll(localItems);
+        adapter.notifyDataSetChanged(); // Refresh RecyclerView
+        Toast.makeText(getContext(), "Showing offline data", Toast.LENGTH_SHORT).show();
+    }
+    private void saveToLocalStorage(ImageItem newItem) {
+        SharedPreferences prefs = requireContext().getSharedPreferences("local_data", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        Gson gson = new Gson();
+
+        // Retrieve existing local items
+        String json = prefs.getString("items", "[]");
+        Type type = new TypeToken<List<ImageItem>>() {}.getType();
+        List<ImageItem> localItems = gson.fromJson(json, type);
+
+        // Add new item and save
+        localItems.add(newItem);
+        editor.putString("items", gson.toJson(localItems));
+        editor.apply();
+    }
 
 }
 

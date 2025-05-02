@@ -1,5 +1,9 @@
 package com.example.shelfaware;
 
+import static androidx.core.content.ContentProviderCompat.requireContext;
+
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.view.LayoutInflater;
@@ -16,7 +20,12 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> {
@@ -89,9 +98,26 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
         holder.deleteFab.setOnClickListener(v -> {
             int adapterPosition = holder.getAdapterPosition();
             if (adapterPosition != RecyclerView.NO_POSITION) {
-                imageItemList.remove(adapterPosition);
-                notifyItemRemoved(adapterPosition);
-                Toast.makeText(v.getContext(), "Item deleted", Toast.LENGTH_SHORT).show();
+                ImageItem itemToDelete = imageItemList.get(adapterPosition);
+                DatabaseReference itemsRef = FirebaseDatabase.getInstance().getReference("items");
+
+                if (itemsRef != null && itemToDelete.getItemId() != null) { // ensure item ID isn't null
+                    itemsRef.child(itemToDelete.getItemId()).removeValue().addOnSuccessListener(aVoid -> {
+                        if (imageItemList.contains(itemToDelete)) { // ensure item exists
+                            imageItemList.remove(adapterPosition);
+                            removeFromLocalStorage(v.getContext(), itemToDelete);
+                            notifyItemRemoved(adapterPosition);
+                        }
+                    }).addOnFailureListener(e -> {
+                        Toast.makeText(v.getContext(), "Failed to delete item", Toast.LENGTH_SHORT).show();
+                    });
+                } else { // Local storage deletion
+                    if (imageItemList.contains(itemToDelete)) {
+                        imageItemList.remove(adapterPosition);
+                        removeFromLocalStorage(v.getContext(), itemToDelete);
+                        notifyItemRemoved(adapterPosition);
+                    }
+                }
             }
         });
     }
@@ -99,6 +125,12 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     @Override
     public int getItemCount() {
         return imageItemList.size();
+    }
+
+    public void setData(List<ImageItem> itemList) {
+        imageItemList.clear();
+        imageItemList.addAll(itemList);
+        notifyDataSetChanged(); // Refresh RecyclerView
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -120,6 +152,23 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
             deleteFab = itemView.findViewById(R.id.deleteFab);
             checkBox = itemView.findViewById(R.id.checkBox);
         }
+    }
+    private void removeFromLocalStorage(Context context, ImageItem itemToDelete) {
+        SharedPreferences prefs = context.getSharedPreferences("local_data", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        Gson gson = new Gson();
+
+        // Retrieve existing local items
+        String json = prefs.getString("items", "[]");
+        Type type = new TypeToken<List<ImageItem>>() {}.getType();
+        List<ImageItem> localItems = gson.fromJson(json, type);
+
+        // Remove item and save changes
+        localItems.removeIf(item -> item.getImageUri().equals(itemToDelete.getImageUri()) &&
+                item.getTitle().equals(itemToDelete.getTitle()));
+
+        editor.putString("items", gson.toJson(localItems));
+        editor.apply();
     }
 
 

@@ -23,6 +23,20 @@ public class ImageItem {
         this.expiringSoon = expiringSoon;
         this.isChecked = false;
     }
+    public ImageItem() {
+        // Required empty constructor for Firebase
+    }
+    private String itemId; // Add this field
+
+    public ImageItem(String itemId, String imageUri, String title, String expirationDate, boolean expiringSoon) {
+        this.itemId = itemId;
+        this.imageUri = imageUri;
+        this.title = title;
+        this.expirationDate = expirationDate;
+        this.expiringSoon = expiringSoon;
+    }
+
+    public String getItemId() { return itemId; }
 
     public String getImageUri() {
         return imageUri;
