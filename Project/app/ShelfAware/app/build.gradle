@@ -54,6 +54,8 @@ dependencies {
     implementation libs.litert.api
     implementation libs.firebase.database
     implementation platform('com.google.firebase:firebase-bom:33.13.0')
+    implementation libs.firebase.auth
+    implementation libs.play.services.auth
     implementation libs.firebase.analytics
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit

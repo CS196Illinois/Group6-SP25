@@ -27,6 +27,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Calendar;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.camera.core.CameraSelector;
@@ -53,6 +55,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.TimeZone;
 
+
 public class PictureActivity extends AppCompatActivity {
 
     Button camera, gallery;
@@ -63,6 +66,39 @@ public class PictureActivity extends AppCompatActivity {
     Button selectExpirationDate;
     Button addItem;
     private Interpreter tfliteInterpreter;
+
+    private final ActivityResultLauncher<Intent> galleryLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri dat = result.getData().getData();
+                    Bitmap image = null;
+                    try {
+                        image = MediaStore.Images.Media.getBitmap(getContentResolver(), dat);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    imageView.setImageBitmap(image);
+                    image = Bitmap.createScaledBitmap(image, imageSize, imageSize, false);
+                    classifyImage(image);
+                    selectExpirationDate.setVisibility(View.VISIBLE);
+                    addItem.setVisibility(View.VISIBLE);
+                }
+            });
+    private final ActivityResultLauncher<Intent> cameraLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Bitmap image = (Bitmap) result.getData().getExtras().get("data");
+                    int dimension = Math.min(image.getWidth(), image.getHeight());
+                    image = ThumbnailUtils.extractThumbnail(image, dimension, dimension);
+                    imageView.setImageBitmap(image);
+
+                    image = Bitmap.createScaledBitmap(image, imageSize, imageSize, false);
+                    classifyImage(image);
+
+                    selectExpirationDate.setVisibility(View.VISIBLE);
+                    addItem.setVisibility(View.VISIBLE);
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,25 +126,19 @@ public class PictureActivity extends AppCompatActivity {
         addItem = findViewById(R.id.add_item);
         addItem.setVisibility(View.INVISIBLE);
 
-        camera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    startActivityForResult(cameraIntent, 3);
-                } else {
-                    requestPermissions(new String[]{Manifest.permission.CAMERA}, 100);
-                }
+        camera.setOnClickListener(view -> {
+            if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                cameraLauncher.launch(cameraIntent);
+            } else {
+                requestPermissions(new String[]{Manifest.permission.CAMERA}, 100);
             }
         });
 
-        gallery.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                galleryIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                startActivityForResult(galleryIntent,1);
-            }
+        gallery.setOnClickListener(view -> {
+            Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            galleryIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            galleryLauncher.launch(galleryIntent);
         });
 
 
@@ -205,15 +235,6 @@ public class PictureActivity extends AppCompatActivity {
             Log.e("MainActivity", "Error initializing model: " + e.getMessage());
         }
 
-        /*
-        EdgeToEdge.enable(this);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-         */
-
     }
 
     public void classifyImage(Bitmap image) {
@@ -268,51 +289,10 @@ public class PictureActivity extends AppCompatActivity {
                 }
             }
 
-
             result.setText(classes[maxPos]);
             Log.d("Classifier", "Predicted: " + classes[maxPos] + " (" + maxConfidence + ")");
         } catch (Exception e) {
             Log.e("Classifier", "Error during classification: " + e.getMessage());
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if (data == null || data.getExtras() == null) {
-            Log.e("PictureActivity", "Camera data is null!");
-        }
-
-        if (resultCode == RESULT_OK) {
-            if (requestCode == 3) {
-                Bitmap image = (Bitmap) data.getExtras().get("data");
-                int dimension = Math.min(image.getWidth(), image.getHeight());
-                image = ThumbnailUtils.extractThumbnail(image, dimension, dimension);
-                imageView.setImageBitmap(image);
-
-                image = Bitmap.createScaledBitmap(image, imageSize, imageSize, false);
-                classifyImage(image);
-
-                selectExpirationDate.setVisibility(View.VISIBLE);
-                addItem.setVisibility(View.VISIBLE);
-            } else {
-                // handles getting image from gallery
-                Uri dat = data.getData();
-                Bitmap image = null;
-                try {
-                    image = MediaStore.Images.Media.getBitmap(this.getContentResolver(), dat);
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                imageView.setImageBitmap(image);
-
-                image = Bitmap.createScaledBitmap(image, imageSize, imageSize, false);
-                classifyImage(image);
-
-                selectExpirationDate.setVisibility(View.VISIBLE);
-                addItem.setVisibility(View.VISIBLE);
-            }
-            super.onActivityResult(requestCode, resultCode, data);
         }
     }
     private MappedByteBuffer loadModelFile() throws IOException {

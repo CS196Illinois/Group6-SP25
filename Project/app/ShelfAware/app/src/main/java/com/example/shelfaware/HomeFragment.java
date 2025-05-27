@@ -15,6 +15,7 @@ import android.os.Bundle;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,6 +27,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -47,6 +50,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class HomeFragment extends Fragment {
 
@@ -74,6 +79,13 @@ public class HomeFragment extends Fragment {
         adapter = new ImageAdapter(imageItemList);
         recyclerView.setAdapter(adapter);
 
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            SharedPreferences prefs = requireContext().getSharedPreferences("local_data", Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.clear();
+            editor.apply();
+        }
 
         try {
             loadItemsFromFirebase(); // call to retrieve data when the fragment is created
@@ -135,6 +147,13 @@ public class HomeFragment extends Fragment {
         Log.d("HomeFragment", "Adding item: " + classification + ", Expiration: " + expirationDate);
         Uri imageUri = saveImageBytesToCache(imageBytes);
 
+        Log.d("HomeFragment", "Generated Image URI: " + imageUri);
+        if (imageBytes == null || imageBytes.length == 0) {
+            Log.e("HomeFragment", "Camera Image Bytes are NULL or EMPTY!");
+            Toast.makeText(getContext(), "Image data is missing!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (imageUri != null) {
             ImageItem newItem = new ImageItem(imageUri.toString(), classification, expirationDate, false);
             imageItemList.add(newItem);
@@ -173,32 +192,49 @@ public class HomeFragment extends Fragment {
             File cachePath = new File(requireContext().getCacheDir(), "images");
             cachePath.mkdirs();
             File file = new File(cachePath, "image_" + System.currentTimeMillis() + ".png");
+
             FileOutputStream stream = new FileOutputStream(file);
             stream.write(imageBytes);
             stream.close();
-            return androidx.core.content.FileProvider.getUriForFile(requireContext(),
-                    requireContext().getPackageName() + ".provider", file);
+
+            if (!file.exists()) {
+                Log.e("SaveImage", "File doesn't exist after creation!");
+                return null;
+            }
+
+            return FileProvider.getUriForFile(requireContext(), requireContext().getPackageName() + ".provider", file);
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("SaveImage", "Error saving image: " + e.getMessage());
             return null;
         }
     }
     public void saveItem(String imageUri, String title, String expirationDate, boolean expiringSoon) {
-        DatabaseReference itemsRef = FirebaseDatabase.getInstance().getReference("items");
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            saveToLocalStorage(new ImageItem(null, imageUri, title, expirationDate, expiringSoon));
+            return;
+        }
 
-        String itemId = itemsRef.push().getKey(); // Generate unique ID
+        String userId = currentUser.getUid();
+        DatabaseReference userItemsRef = FirebaseDatabase.getInstance().getReference("items").child(userId);
+
+        String itemId = userItemsRef.push().getKey(); // Generate unique ID
         ImageItem newItem = new ImageItem(itemId, imageUri, title, expirationDate, expiringSoon);
 
-        if (itemsRef != null) {
-            itemsRef.child(itemId).setValue(newItem); // Stores item with unique key in Firebase
-        } else {
-            saveToLocalStorage(newItem); // save locally if Firebase isn’t available
-        }
+        userItemsRef.child(itemId).setValue(newItem); // Stores item under the user's UID in Firebase
     }
 
     private void loadItemsFromFirebase() {
-        DatabaseReference itemsRef = FirebaseDatabase.getInstance().getReference("items");
-        itemsRef.addValueEventListener(new ValueEventListener() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            loadFromLocalStorage();
+            return;
+        }
+
+        String userId = currentUser.getUid();
+        DatabaseReference userItemsRef = FirebaseDatabase.getInstance().getReference("items").child(userId);
+
+        userItemsRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (!isAdded()) return;
@@ -207,6 +243,7 @@ public class HomeFragment extends Fragment {
                     ImageItem item = snapshot.getValue(ImageItem.class);
                     imageItemList.add(item);
                 }
+
                 Collections.sort(imageItemList, (item1, item2) -> {
                     try {
                         SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy", Locale.getDefault());
@@ -215,11 +252,9 @@ public class HomeFragment extends Fragment {
 
                         if (date1 == null || date2 == null) return 0;
 
-                        // First, compare expiration dates
                         int dateComparison = date1.compareTo(date2);
-                        if (dateComparison != 0) return dateComparison; // If dates are different, sort by date
+                        if (dateComparison != 0) return dateComparison;
 
-                        // If expiration dates are the same, sort alphabetically by title
                         return item1.getTitle().compareToIgnoreCase(item2.getTitle());
                     } catch (ParseException e) {
                         e.printStackTrace();
@@ -228,6 +263,7 @@ public class HomeFragment extends Fragment {
                 });
                 adapter.notifyDataSetChanged();
             }
+
             @Override
             public void onCancelled(DatabaseError error) {
                 Log.e("Firebase", "Error retrieving data: " + error.getMessage());
@@ -265,6 +301,13 @@ public class HomeFragment extends Fragment {
         editor.apply();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (imageItemList.isEmpty()) {
+            loadItemsFromFirebase();
+        }
+    }
 }
 
 

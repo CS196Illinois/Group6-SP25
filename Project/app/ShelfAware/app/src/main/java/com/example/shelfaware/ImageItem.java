@@ -36,7 +36,12 @@ public class ImageItem {
         this.expiringSoon = expiringSoon;
     }
 
-    public String getItemId() { return itemId; }
+    public String getItemId() {
+        if (itemId == null || itemId.isEmpty()) {
+            Log.e("ImageItem", "Item ID is missing!");
+        }
+        return itemId;
+    }
 
     public String getImageUri() {
         return imageUri;

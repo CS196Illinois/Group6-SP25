@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +21,8 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.gson.Gson;
@@ -99,23 +102,24 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
             int adapterPosition = holder.getAdapterPosition();
             if (adapterPosition != RecyclerView.NO_POSITION) {
                 ImageItem itemToDelete = imageItemList.get(adapterPosition);
-                DatabaseReference itemsRef = FirebaseDatabase.getInstance().getReference("items");
+                FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+                if (currentUser != null) {
+                    DatabaseReference userItemsRef = FirebaseDatabase.getInstance().getReference("items").child(currentUser.getUid());
 
-                if (itemsRef != null && itemToDelete.getItemId() != null) { // ensure item ID isn't null
-                    itemsRef.child(itemToDelete.getItemId()).removeValue().addOnSuccessListener(aVoid -> {
-                        if (imageItemList.contains(itemToDelete)) { // ensure item exists
-                            imageItemList.remove(adapterPosition);
-                            removeFromLocalStorage(v.getContext(), itemToDelete);
-                            notifyItemRemoved(adapterPosition);
-                        }
-                    }).addOnFailureListener(e -> {
-                        Toast.makeText(v.getContext(), "Failed to delete item", Toast.LENGTH_SHORT).show();
-                    });
-                } else { // Local storage deletion
-                    if (imageItemList.contains(itemToDelete)) {
-                        imageItemList.remove(adapterPosition);
-                        removeFromLocalStorage(v.getContext(), itemToDelete);
-                        notifyItemRemoved(adapterPosition);
+                    if (userItemsRef != null && itemToDelete.getItemId() != null) {
+                        userItemsRef.child(itemToDelete.getItemId()).removeValue().addOnSuccessListener(aVoid -> {
+                            if (imageItemList.contains(itemToDelete)) {
+                                imageItemList.remove(adapterPosition);
+                                removeFromLocalStorage(v.getContext(), itemToDelete);
+                                notifyItemRemoved(adapterPosition);
+                            }
+                        }).addOnFailureListener(e -> {
+                            Log.e("ImageAdapter", "Failed to delete item: " + e.getMessage());
+                            Toast.makeText(v.getContext(), "Failed to delete item", Toast.LENGTH_SHORT).show();
+                        });
+                    } else {
+                        Log.e("ImageAdapter", "Item ID is null!");
+                        Toast.makeText(v.getContext(), "Error: Cannot find item ID", Toast.LENGTH_SHORT).show();
                     }
                 }
             }
